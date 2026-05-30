@@ -2,9 +2,10 @@ import requests
 import logging
 import csv
 import json
+import boto3
 from datetime import datetime
 
-logging.basicConfig(filename="error.txt",level=logging.INFO,format="%(asctime)s - %(levelname)s - %(message)s")
+logging.basicConfig(filename="logs.txt",level=logging.INFO,format="%(asctime)s - %(levelname)s - %(message)s")
 logging.info("ELT pipeline started")
 
 API_KEY = "96eb8b16-c231-4bca-b820-93e5919e0c7e"
@@ -58,8 +59,20 @@ def save_to_file(matches, filename="matches.csv"):
 
     logging.info(f"Saved {len(matches)} matches to {filename}")
 
+def upload_to_s3(filename="matches.csv"):
+    try:
+        logging.info("creating s3 client")
+        s3 = boto3.client("s3")
+        logging.info("s3 client successfully created")
+        s3.upload_file(filename,'cricket-pipeline-arpan-2026','matches/matches.csv')
+        logging.info(f"local file {filename} successfully uploaded to s3 bucket")
+    except Exception as e:
+        logging.exception(f"error in uploading file {filename} to s3 bucket")
+
+
 
 # Main pipeline
 matches_raw = fetch_matches()
 matches_clean = [clean_match(m) for m in matches_raw]
 save_to_file(matches_clean)
+upload_to_s3("matches.csv")
